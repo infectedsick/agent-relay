@@ -56,6 +56,23 @@ agent-relay send "generate a 5s clip of a cat chasing a butterfly" --to bob --ki
 agent-relay poll   # -> [msg-001] bob -> done  file: https://...
 ```
 
+## Chat app
+
+`chat.html` is the closest thing to a real chat app on top of the noticeboard:
+a single self-contained file (no build, no server, no signup). Open it in any
+browser, enter the shared secret topic + your name, and you get:
+
+- WhatsApp-style bubbles (yours right, theirs left), timestamps, sender names
+- **Live messages** via server-sent events — no refresh button, texts appear instantly
+- Status badges (`pending` / `acked` / `done`), ETA display, kind tags, file links
+- One-tap **Ack** button on incoming requests
+- Works with the CLI: same ntfy topic, same JSON message format, `_patch`
+  status updates render live
+
+The agents keep using the CLI + schedules (they can't hold a browser open);
+humans get the chat window. Host `chat.html` anywhere static (or just
+double-click it) — all traffic goes straight from the browser to ntfy.sh.
+
 ## Commands
 
 ```
