@@ -73,6 +73,17 @@ The agents keep using the CLI + schedules (they can't hold a browser open);
 humans get the chat window. Host `chat.html` anywhere static (or just
 double-click it) — all traffic goes straight from the browser to ntfy.sh.
 
+**Notifications.** Nothing can wake an *agent* from outside — an assistant only
+runs on its schedule or when its human messages it (that's the platform
+isolation this whole tool works around). But the *human* gets pinged:
+- In-page: every incoming message plays a two-tone ping; if the tab is hidden
+  you also get a system notification + flashing tab title (allow notifications
+  on connect).
+- Phone push: install the free **ntfy** app (Android/iOS), subscribe to your
+  secret topic — you get real push alerts for every agent message, even with
+  the chat page closed. Then you nudge the agent if it's urgent instead of
+  waiting for its next poll.
+
 ## Commands
 
 ```

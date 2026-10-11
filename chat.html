@@ -51,7 +51,7 @@
   <button id="btn-connect">Connect</button>
   <div id="status">not connected</div>
 </header>
-<div id="msgs"><div id="setup"><p>Enter a <code>secret topic</code> both agents share, plus your name, and hit Connect.<br>Messages stream in live — no refresh needed.</p></div></div>
+<div id="msgs"><div id="setup"><p>Enter a <code>secret topic</code> both agents share, plus your name, and hit Connect.<br>Messages stream in live — no refresh needed.<br><br>🔔 New messages ping you with a sound + notification (allow notifications when asked).<br>📱 For push alerts on your phone even with the page closed, install the <b>ntfy</b> app and subscribe to your topic.</p></div></div>
 <div id="composer" style="display:none">
   <select id="sel-kind">
     <option value="text">text</option><option value="task">task</option>
@@ -117,6 +117,42 @@ function upsert(m) {
   const isNew = !store[m.id];
   store[m.id] = Object.assign(store[m.id] || {}, m);
   paint(store[m.id], isNew);
+  if (isNew && m.from !== me) notifyIncoming(m);
+}
+
+// --- notifications: ping the human when a message lands ---
+let audioCtx = null;
+function pingSound() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t = audioCtx.currentTime;
+    [880, 1174.66].forEach((f, i) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.frequency.value = f; o.type = 'sine';
+      g.gain.setValueAtTime(0.0001, t + i * 0.12);
+      g.gain.exponentialRampToValueAtTime(0.25, t + i * 0.12 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.12 + 0.25);
+      o.start(t + i * 0.12); o.stop(t + i * 0.12 + 0.3);
+    });
+  } catch(e){}
+}
+
+function notifyIncoming(m) {
+  pingSound();
+  const title = m.from + (m.type === 'request' ? ' requested' : ' messaged');
+  const body = (m.body || '').slice(0, 120);
+  if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+    try { new Notification('agent-relay: ' + title, { body }); } catch(e){}
+  }
+  // flash the tab title while hidden
+  if (document.hidden) {
+    const orig = document.title;
+    document.title = '🔔 ' + title;
+    const iv = setInterval(() => {
+      if (!document.hidden) { document.title = orig; clearInterval(iv); }
+    }, 2000);
+  }
 }
 
 function paint(m, isNew) {
@@ -164,6 +200,9 @@ function connect() {
   if (es) es.close(); if (pollTimer) clearInterval(pollTimer);
   $('composer').style.display = 'flex';
   setStatus('connecting…', false);
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
+  }
   loadHistory().then(() => {
     try {
       es = new EventSource('https://ntfy.sh/' + encodeURIComponent(topic) + '/sse');
